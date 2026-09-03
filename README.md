@@ -1,4 +1,4 @@
-# dsh-xhs-collector
+﻿# dsh-xhs-collector
 
 > 一键批量抓取小红书搜索结果，让 AI Agent 在住宅 IP 环境下稳定获取数据。
 
@@ -134,4 +134,20 @@ if '登录' in page_text:
 
 ## 许可证
 
-MIT — 详见 [LICENSE](LICENSE)
+MIT — 详见 [LICENSE](LICENSE)\n
+
+---
+
+## 🌏 DSH 生态成员
+
+本项目是 **DSH (DeepSeek Harness)** 生态的一员，同系列还有：
+
+- 🎀 [`dsh-moe-plugin`](https://github.com/nataliwhite20534-droid/dsh-moe-plugin) — 萌属性 Persona 系统（10 种预设卡片）
+- ⚙️ [`dsh-4-role-workflow`](https://github.com/nataliwhite20534-droid/dsh-4-role-workflow) — 4 角色 Agent 工作流
+- 📓 [`dsh-china-research-notes`](https://github.com/nataliwhite20534-droid/dsh-china-research-notes) — 中国平台反爬实战笔记
+
+> 欢迎 Star / Fork / Issue！想参与开发？Fork 后提 PR 即可。
+
+## 🔗 相关链接
+
+- [DSH (DeepSeek Harness) 主仓](https://github.com/deepseek-ai/deepseek-harness)
