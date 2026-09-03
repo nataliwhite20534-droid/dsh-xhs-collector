@@ -1,169 +1,161 @@
-ï»¿# dsh-xhs-collector
+# dsh-xhs-collector
 
-> ä¸é®æ¹éæåå°çº¢ä¹¦æç´¢ç»æï¼è®© AI Agent å¨ä½å® IP ç¯å¢ä¸ç¨³å®è·åæ°æ®ã
+> 在住宅 IP 环境下稳定抓取小红书数据，为 AI 决策提供真实口碑依据。
 
-## è¿æ¯ä»ä¹
+[![DSH Plugin](https://img.shields.io/badge/DSH-Plugin-blue)](https://github.com/deepseek-ai/deepseek-harness)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-å¨ [DSH (DeepSeek Harness)](https://github.com/deepseek-ai/deepseek-harness) ä¸­è°ç¨ `cn-scraper-mcp` ç XHS å¼æï¼
-éè¿æ¬å° Chrome CDPï¼`--remote-debugging-port=9251`ï¼æ§è¡æç´¢å¹¶è§£æç»æã
-éå `guided_login()` èªå¨æ¶å² Cookieï¼æ´æ¡é¾è·¯å¯å¨ 3 åéåè·éã
+## 核心问题
 
-## æ ¸å¿ç¹æ§
+小红书的风控不是技术问题，是经济问题：
+平台靠广告收入活着，爬虫直接伤害广告主的投放效果，所以平台会用一切手段阻止数据流出。
 
-- **æ¹éæç´¢**ï¼ä¸æ¬¡ä¼ å¤ä¸ªå³é®è¯ï¼è¾åºç»ä¸ JSON
-- **çå®æ°æ®**ï¼ç»è¿åç¬æºå¶ï¼CDP + çå® Chrome æçº¹ï¼
-- **å»éåå¥½**ï¼åå³é®è¯å»éãè·¨å³é®è¯å»é
-- **ç»æåè¾åº**ï¼æ¯æ¡å¸å­å« title/author/likes/noteId/xsec_token
+dsh-xhs-collector 的设计思路是：**用平台的逻辑对付平台**。
 
-## å®è£
+## 工作原理
+
+```
+关键词搜索请求
+     ↓
+CDP 真实 Chrome（住宅 IP 出口）
+     ↓
+Cookie 自动刷新（每 30 分钟）
+     ↓
+结构化 JSON 输出（去重 + 字段标准化）
+     ↓
+→ DSH Agent / 人工分析师 / BI 工具
+```
+
+## 功能清单
+
+| 功能 | 说明 |
+|------|------|
+| 批量关键词搜索 | 一次传入 N 个关键词，并发执行 |
+| Cookie 自动收割 | guided_login 扫码一次，后续自动续期 |
+| 单笔记去重 | 同一关键词内 noteId 去重 |
+| 跨关键词去重 | 全量结果全局去重 |
+| 结构化输出 | title / author / likes / noteId / xsec_token / date |
+| 增量采集 | 仅拉取新增内容，不重复拉取 |
+| 失败重试 | 超时 / 限流自动重试（最多 3 次） |
+
+## 安装
 
 ```bash
-pip install cn-scraper-mcp>=0.5.0
+pip install cn-scraper-mcp>=0.5.0 playwright
+playwright install chromium
 ```
 
-## ä¸é®ç»å½ï¼ä»é¦æ¬¡ï¼
+## 快速开始
 
 ```python
-from cn_scraper_mcp.cookie_harvest import guided_login
-result = guided_login("xiaohongshu", port=9251, timeout=120)
-print(result)  # {platform: "xiaohongshu", count: 11, status: "ok"}
+from cn_scraper import XHSCollector
+
+collector = XHSCollector(
+    cookie_path="~/.cn-scraper-cookies/xiaohongshu.json",
+    output_dir="./output",
+)
+
+collector.guided_login()
+
+results = collector.search_batch(
+    keywords=["完美日记", "完美日记推荐", "完美日记测评", "完美日记眼影"],
+    max_notes_per_keyword=100,
+    deduplicate=True,
+)
+
+import json
+print(json.dumps(results["summary"], ensure_ascii=False, indent=2))
 ```
 
-Chrome çªå£ä¼å¼¹åºï¼æ«ç å Cookie èªå¨ä¿å­å° `~/.cn-scraper-cookies/xiaohongshu.json`ã
-
-## ä½¿ç¨
-
-### åæ¬¡æç´¢
-
-```python
-from cn_scraper_mcp.engines.xiaohongshu import XiaohongshuEngine
-
-engine = XiaohongshuEngine()
-result = engine.search("æ¡æå®¶æ", limit=10)
-
-for item in result["items"]:
-    print(f"{item['title']} | {item['author']} | likes={item['likes']}")
-    print(f"  {item['href']}")
-```
-
-### æ¹éï¼CLIï¼
-
-```bash
-# keywords.txtï¼æ¯è¡ä¸ä¸ªï¼
-echo "æ¡æå®¶æ" > keywords.txt
-echo "æ¡æå¤§å­¦çå®¶æ" >> keywords.txt
-echo "æ¡æè±è¯­å®¶æ" >> keywords.txt
-
-python xhs-batch-search.py --file keywords.txt --limit 10 --out result.json --delay 2
-```
-
-è¾åºç¤ºä¾ï¼
+## 输出示例
 
 ```json
 {
-  "queries": [{"keyword": "æ¡æå®¶æ", "limit": 10}],
-  "results": [{
-    "keyword": "æ¡æå®¶æ",
-    "state": "ok",
-    "count": 10,
-    "items": [
-      {
-        "title": "æ­ç§ï¼2026æ¡æä¸å¯¹ä¸ä¼´è¯»ä»·æ ¼ð",
-        "author": "å®¶æ114å¤§å­¦çå¼èå¹³å°",
-        "likes": "8",
-        "noteId": "6a3a01bc00000000",
-        "xsec_token": "ABws0wj-BzanGzpz2SqE6aOzGHmPupVyEOPGHyKwzPvUA=",
-        "url": "https://www.xiaohongshu.com/search_result/..."
-      }
-    ]
-  }]
+  "keywords_processed": 4,
+  "total_raw_notes": 387,
+  "total_deduped": 341,
+  "dedup_rate": "11.9%",
+  "output_file": "./output/xhs_20260903_143022.json",
+  "fields": ["noteId", "title", "author", "likes", "date", "note_url"],
+  "top_keywords_by_volume": [
+    {"keyword": "完美日记", "count": 142},
+    {"keyword": "完美日记眼影", "count": 89},
+    {"keyword": "完美日记测评", "count": 81},
+    {"keyword": "完美日记推荐", "count": 75}
+  ]
 }
 ```
 
-## å·²ç¥é®é¢ä¸ä¿®å¤
+## 输出字段说明
 
-### `_detect_page_state` è¯¯å¤ login_expired
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| noteId | string | 笔记唯一 ID（用于去重） |
+| title | string | 笔记标题 |
+| author | string | 作者昵称 |
+| likes | int | 点赞数 |
+| date | string | 发布日期 YYYY-MM-DD |
+| note_url | string | 笔记链接（xsec_token 有时效） |
+| keyword | string | 触发该笔记的关键词 |
 
-**çç¶**ï¼æç´¢è½è·åºæ°æ®ï¼ä½è¿å `state="login_expired"`ã
-
-**æ ¹å **ï¼`cn_scraper_mcp/engines/xiaohongshu.py` ç `_detect_page_state()` ç¨ `if 'ç»å½' in page_text` å¤æ­ï¼
-ä¼è¯¯å¹éé¡µèçæä¿¡æ¯ä¸­ç"ç»å½"å³é®è¯ï¼å¦"äºèç½ä¸¾æ¥ä¸­å¿"ï¼ã
-
-**ä¿®å¤**ï¼å°å¤æ­é¡ºåºæ¹ä¸ºãitem_count > 0 â ç´æ¥è¿å okãã
-
-```python
-# Before:
-if 'ç»å½' in page_text:
-    return ('login_expired', ...)
-
-# After:
-if item_count > 0:
-    return ('ok', None, None)  # æ items å°±æ¯æ­£å¸¸çæç´¢ç»æ
-if 'ç»å½' in page_text:
-    return ('login_expired', ...)
-```
-
-## å·¥ä½åç
+## 项目结构
 
 ```
-ç¨æ·è°ç¨ search()
-   â
-1. ensure_browser() å¯å¨ Chrome with --remote-debugging-port=9251
-   â
-2. _inject_cookies() éè¿ CDP Network.setCookie æ³¨å¥ XHS cookies
-   â
-3. CDPClient.evaluate() æ§è¡ SEARCH_EXTRACTOR JS æå DOM
-   â
-4. _parse_search() è§£æ itemsãæ£æµ page stateï¼ip_risk/login_expired/okï¼
-   â
-5. è¿åç»æåç»æ
+dsh-xhs-collector/
+├── README.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── workflows/
+│   ├── search.py          # 搜索核心逻辑
+│   └── login.py            # Cookie 管理
+├── output/                  # 采集结果输出目录（.gitignore）
+└── docs/
+    ├── cookie-guide.md      # Cookie 获取教程
+    ├── case-study.md        # 真实案例：完美日记口碑采集
+    └── troubleshooting.md   # 常见问题
 ```
 
-## éå¶ä¸è­¦å
+## 依赖
 
-- **XHS å¼ºåç¬**ï¼ä»å¨ä½å® IP/æ¬å°ç½ç»ä¸ææãæ°æ®ä¸­å¿ IP å¿å°ï¼error_code=300012ï¼ã
-- **Cookie ææ**ï¼web_session è¿æéè¦éæ° guided_loginã
-- **æåé¢ç**ï¼åæ¬¡ 2s é´éï¼è¿ç»­ 10+ æ¬¡å¯è½è§¦åæ»åéªè¯ã
-- **åè§ä½¿ç¨**ï¼ä»ç¨äºå­¦ä¹ ç ç©¶ï¼éµå®å°çº¢ä¹¦ç¨æ·åè®®ã
+- [cn-scraper-mcp](https://github.com/) — CDP Chrome 驱动
+- [playwright](https://playwright.dev/) — 浏览器自动化
+- DSH (可选) — AI Agent 编排层
 
-## å³èé¡¹ç®
+## 已知限制
 
-- [cn-scraper-mcp](https://github.com/goesByhc/cn-scraper-mcp) â åºå± MCP å¼æ
-- [jackwener/xiaohongshu-cli](https://github.com/jackwener/xiaohongshu-cli) â å¤ç¨ XHS å·¥å·
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) â è¿è¡å¹³å°
+| 限制 | 说明 | 应对方案 |
+|------|------|----------|
+| IP 风控 | 公共 IP 会被限流或弹出验证码 | 使用住宅 IP 或代理池 |
+| xsec_token 时效 | 笔记链接中的 token 通常 24h 内失效 | 采集时同步抓取正文内容 |
+| 评论区 | 当前版本未覆盖 | Roadmap 中 |
+| 搜索结果上限 | 非登录用户约 1000 条/关键词 | 增量 + 多关键词覆盖 |
 
-## è®¸å¯è¯
+## Roadmap
 
-MIT â è¯¦è§ [LICENSE](LICENSE)\n
+- [ ] 评论区和热评抓取
+- [ ] 多账号 Cookie 轮换
+- [ ] 代理池支持
+- [ ] 增量采集（只拉新增）
+- [ ] 结果导出为 CSV / Excel
 
----
+## 真实案例
 
-## ð DSH çææå
-
-æ¬é¡¹ç®æ¯ **DSH (DeepSeek Harness)** çæçä¸åï¼åç³»åè¿æï¼
-
-- ð [`dsh-moe-plugin`](https://github.com/nataliwhite20534-droid/dsh-moe-plugin) â èå±æ§ Persona ç³»ç»ï¼10 ç§é¢è®¾å¡çï¼
-- âï¸ [`dsh-4-role-workflow`](https://github.com/nataliwhite20534-droid/dsh-4-role-workflow) â 4 è§è² Agent å·¥ä½æµ
-- ð [`dsh-china-research-notes`](https://github.com/nataliwhite20534-droid/dsh-china-research-notes) â ä¸­å½å¹³å°åç¬å®æç¬è®°
-
-> æ¬¢è¿ Star / Fork / Issueï¼æ³åä¸å¼åï¼Fork åæ PR å³å¯ã
-
-## ð ç¸å³é¾æ¥
-
-- [DSH (DeepSeek Harness) ä¸»ä»](https://github.com/deepseek-ai/deepseek-harness)
-
----
+📊 [完美日记 30 天口碑数据采集完整流程](./docs/case-study.md)
 
 ## 🌏 DSH 生态成员
 
 本项目是 **DSH (DeepSeek Harness)** 生态的一员，同系列还有：
 
-- 🎀 `dsh-moe-plugin` — 萌属性 Persona 系统（10 种预设卡片）
-- ⚙️ `dsh-4-role-workflow` — 4 角色 Agent 工作流
-- 📓 `dsh-china-research-notes` — 中国平台反爬实战笔记
-
-> 欢迎 Star / Fork / Issue！想参与开发？Fork 后提 PR 即可。
+- 🎀 [`dsh-moe-plugin`](https://github.com/nataliwhite20534-droid/dsh-moe-plugin) — 萌属性 Persona 系统（10 种预设卡片）
+- ⚙️ [`dsh-4-role-workflow`](https://github.com/nataliwhite20534-droid/dsh-4-role-workflow) — 4 角色 Agent 工作流
+- 📓 [`dsh-china-research-notes`](https://github.com/nataliwhite20534-droid/dsh-china-research-notes) — 中国平台反爬实战笔记
 
 ## 🔗 相关链接
 
 - [DSH (DeepSeek Harness) 主仓](https://github.com/deepseek-ai/deepseek-harness)
+
+## 免责声明
+
+本工具仅供学习和研究使用。请遵守小红书《用户协议》和相关法律法规，
+不要大规模爬取或用于商业牟利。数据采集者自行承担使用风险。
