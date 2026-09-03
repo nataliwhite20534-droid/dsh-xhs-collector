@@ -1,27 +1,27 @@
-﻿# dsh-xhs-collector
+ï»¿# dsh-xhs-collector
 
-> 一键批量抓取小红书搜索结果，让 AI Agent 在住宅 IP 环境下稳定获取数据。
+> ä¸é®æ¹éæåå°çº¢ä¹¦æç´¢ç»æï¼è®© AI Agent å¨ä½å® IP ç¯å¢ä¸ç¨³å®è·åæ°æ®ã
 
-## 这是什么
+## è¿æ¯ä»ä¹
 
-在 [DSH (DeepSeek Harness)](https://github.com/deepseek-ai/deepseek-harness) 中调用 `cn-scraper-mcp` 的 XHS 引擎，
-通过本地 Chrome CDP（`--remote-debugging-port=9251`）执行搜索并解析结果。
-配合 `guided_login()` 自动收割 Cookie，整条链路可在 3 分钟内跑通。
+å¨ [DSH (DeepSeek Harness)](https://github.com/deepseek-ai/deepseek-harness) ä¸­è°ç¨ `cn-scraper-mcp` ç XHS å¼æï¼
+éè¿æ¬å° Chrome CDPï¼`--remote-debugging-port=9251`ï¼æ§è¡æç´¢å¹¶è§£æç»æã
+éå `guided_login()` èªå¨æ¶å² Cookieï¼æ´æ¡é¾è·¯å¯å¨ 3 åéåè·éã
 
-## 核心特性
+## æ ¸å¿ç¹æ§
 
-- **批量搜索**：一次传多个关键词，输出统一 JSON
-- **真实数据**：绕过反爬机制（CDP + 真实 Chrome 指纹）
-- **去重友好**：同关键词去重、跨关键词去重
-- **结构化输出**：每条帖子含 title/author/likes/noteId/xsec_token
+- **æ¹éæç´¢**ï¼ä¸æ¬¡ä¼ å¤ä¸ªå³é®è¯ï¼è¾åºç»ä¸ JSON
+- **çå®æ°æ®**ï¼ç»è¿åç¬æºå¶ï¼CDP + çå® Chrome æçº¹ï¼
+- **å»éåå¥½**ï¼åå³é®è¯å»éãè·¨å³é®è¯å»é
+- **ç»æåè¾åº**ï¼æ¯æ¡å¸å­å« title/author/likes/noteId/xsec_token
 
-## 安装
+## å®è£
 
 ```bash
 pip install cn-scraper-mcp>=0.5.0
 ```
 
-## 一键登录（仅首次）
+## ä¸é®ç»å½ï¼ä»é¦æ¬¡ï¼
 
 ```python
 from cn_scraper_mcp.cookie_harvest import guided_login
@@ -29,47 +29,47 @@ result = guided_login("xiaohongshu", port=9251, timeout=120)
 print(result)  # {platform: "xiaohongshu", count: 11, status: "ok"}
 ```
 
-Chrome 窗口会弹出，扫码后 Cookie 自动保存到 `~/.cn-scraper-cookies/xiaohongshu.json`。
+Chrome çªå£ä¼å¼¹åºï¼æ«ç å Cookie èªå¨ä¿å­å° `~/.cn-scraper-cookies/xiaohongshu.json`ã
 
-## 使用
+## ä½¿ç¨
 
-### 单次搜索
+### åæ¬¡æç´¢
 
 ```python
 from cn_scraper_mcp.engines.xiaohongshu import XiaohongshuEngine
 
 engine = XiaohongshuEngine()
-result = engine.search("桂林家教", limit=10)
+result = engine.search("æ¡æå®¶æ", limit=10)
 
 for item in result["items"]:
     print(f"{item['title']} | {item['author']} | likes={item['likes']}")
     print(f"  {item['href']}")
 ```
 
-### 批量（CLI）
+### æ¹éï¼CLIï¼
 
 ```bash
-# keywords.txt（每行一个）
-echo "桂林家教" > keywords.txt
-echo "桂林大学生家教" >> keywords.txt
-echo "桂林英语家教" >> keywords.txt
+# keywords.txtï¼æ¯è¡ä¸ä¸ªï¼
+echo "æ¡æå®¶æ" > keywords.txt
+echo "æ¡æå¤§å­¦çå®¶æ" >> keywords.txt
+echo "æ¡æè±è¯­å®¶æ" >> keywords.txt
 
 python xhs-batch-search.py --file keywords.txt --limit 10 --out result.json --delay 2
 ```
 
-输出示例：
+è¾åºç¤ºä¾ï¼
 
 ```json
 {
-  "queries": [{"keyword": "桂林家教", "limit": 10}],
+  "queries": [{"keyword": "æ¡æå®¶æ", "limit": 10}],
   "results": [{
-    "keyword": "桂林家教",
+    "keyword": "æ¡æå®¶æ",
     "state": "ok",
     "count": 10,
     "items": [
       {
-        "title": "揭秘！2026桂林一对一伴读价格📝",
-        "author": "家教114大学生兼职平台",
+        "title": "æ­ç§ï¼2026æ¡æä¸å¯¹ä¸ä¼´è¯»ä»·æ ¼ð",
+        "author": "å®¶æ114å¤§å­¦çå¼èå¹³å°",
         "likes": "8",
         "noteId": "6a3a01bc00000000",
         "xsec_token": "ABws0wj-BzanGzpz2SqE6aOzGHmPupVyEOPGHyKwzPvUA=",
@@ -80,61 +80,77 @@ python xhs-batch-search.py --file keywords.txt --limit 10 --out result.json --de
 }
 ```
 
-## 已知问题与修复
+## å·²ç¥é®é¢ä¸ä¿®å¤
 
-### `_detect_page_state` 误判 login_expired
+### `_detect_page_state` è¯¯å¤ login_expired
 
-**症状**：搜索能跑出数据，但返回 `state="login_expired"`。
+**çç¶**ï¼æç´¢è½è·åºæ°æ®ï¼ä½è¿å `state="login_expired"`ã
 
-**根因**：`cn_scraper_mcp/engines/xiaohongshu.py` 的 `_detect_page_state()` 用 `if '登录' in page_text` 判断，
-会误匹配页脚版权信息中的"登录"关键词（如"互联网举报中心"）。
+**æ ¹å **ï¼`cn_scraper_mcp/engines/xiaohongshu.py` ç `_detect_page_state()` ç¨ `if 'ç»å½' in page_text` å¤æ­ï¼
+ä¼è¯¯å¹éé¡µèçæä¿¡æ¯ä¸­ç"ç»å½"å³é®è¯ï¼å¦"äºèç½ä¸¾æ¥ä¸­å¿"ï¼ã
 
-**修复**：将判断顺序改为「item_count > 0 → 直接返回 ok」。
+**ä¿®å¤**ï¼å°å¤æ­é¡ºåºæ¹ä¸ºãitem_count > 0 â ç´æ¥è¿å okãã
 
 ```python
 # Before:
-if '登录' in page_text:
+if 'ç»å½' in page_text:
     return ('login_expired', ...)
 
 # After:
 if item_count > 0:
-    return ('ok', None, None)  # 有 items 就是正常的搜索结果
-if '登录' in page_text:
+    return ('ok', None, None)  # æ items å°±æ¯æ­£å¸¸çæç´¢ç»æ
+if 'ç»å½' in page_text:
     return ('login_expired', ...)
 ```
 
-## 工作原理
+## å·¥ä½åç
 
 ```
-用户调用 search()
-   ↓
-1. ensure_browser() 启动 Chrome with --remote-debugging-port=9251
-   ↓
-2. _inject_cookies() 通过 CDP Network.setCookie 注入 XHS cookies
-   ↓
-3. CDPClient.evaluate() 执行 SEARCH_EXTRACTOR JS 提取 DOM
-   ↓
-4. _parse_search() 解析 items、检测 page state（ip_risk/login_expired/ok）
-   ↓
-5. 返回结构化结果
+ç¨æ·è°ç¨ search()
+   â
+1. ensure_browser() å¯å¨ Chrome with --remote-debugging-port=9251
+   â
+2. _inject_cookies() éè¿ CDP Network.setCookie æ³¨å¥ XHS cookies
+   â
+3. CDPClient.evaluate() æ§è¡ SEARCH_EXTRACTOR JS æå DOM
+   â
+4. _parse_search() è§£æ itemsãæ£æµ page stateï¼ip_risk/login_expired/okï¼
+   â
+5. è¿åç»æåç»æ
 ```
 
-## 限制与警告
+## éå¶ä¸è­¦å
 
-- **XHS 强反爬**：仅在住宅 IP/本地网络下有效。数据中心 IP 必封（error_code=300012）。
-- **Cookie 有期**：web_session 过期需要重新 guided_login。
-- **抓取频率**：单次 2s 间隔，连续 10+ 次可能触发滑块验证。
-- **合规使用**：仅用于学习研究，遵守小红书用户协议。
+- **XHS å¼ºåç¬**ï¼ä»å¨ä½å® IP/æ¬å°ç½ç»ä¸ææãæ°æ®ä¸­å¿ IP å¿å°ï¼error_code=300012ï¼ã
+- **Cookie ææ**ï¼web_session è¿æéè¦éæ° guided_loginã
+- **æåé¢ç**ï¼åæ¬¡ 2s é´éï¼è¿ç»­ 10+ æ¬¡å¯è½è§¦åæ»åéªè¯ã
+- **åè§ä½¿ç¨**ï¼ä»ç¨äºå­¦ä¹ ç ç©¶ï¼éµå®å°çº¢ä¹¦ç¨æ·åè®®ã
 
-## 关联项目
+## å³èé¡¹ç®
 
-- [cn-scraper-mcp](https://github.com/goesByhc/cn-scraper-mcp) — 底层 MCP 引擎
-- [jackwener/xiaohongshu-cli](https://github.com/jackwener/xiaohongshu-cli) — 备用 XHS 工具
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) — 运行平台
+- [cn-scraper-mcp](https://github.com/goesByhc/cn-scraper-mcp) â åºå± MCP å¼æ
+- [jackwener/xiaohongshu-cli](https://github.com/jackwener/xiaohongshu-cli) â å¤ç¨ XHS å·¥å·
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) â è¿è¡å¹³å°
 
-## 许可证
+## è®¸å¯è¯
 
-MIT — 详见 [LICENSE](LICENSE)\n
+MIT â è¯¦è§ [LICENSE](LICENSE)\n
+
+---
+
+## ð DSH çææå
+
+æ¬é¡¹ç®æ¯ **DSH (DeepSeek Harness)** çæçä¸åï¼åç³»åè¿æï¼
+
+- ð [`dsh-moe-plugin`](https://github.com/nataliwhite20534-droid/dsh-moe-plugin) â èå±æ§ Persona ç³»ç»ï¼10 ç§é¢è®¾å¡çï¼
+- âï¸ [`dsh-4-role-workflow`](https://github.com/nataliwhite20534-droid/dsh-4-role-workflow) â 4 è§è² Agent å·¥ä½æµ
+- ð [`dsh-china-research-notes`](https://github.com/nataliwhite20534-droid/dsh-china-research-notes) â ä¸­å½å¹³å°åç¬å®æç¬è®°
+
+> æ¬¢è¿ Star / Fork / Issueï¼æ³åä¸å¼åï¼Fork åæ PR å³å¯ã
+
+## ð ç¸å³é¾æ¥
+
+- [DSH (DeepSeek Harness) ä¸»ä»](https://github.com/deepseek-ai/deepseek-harness)
 
 ---
 
@@ -142,9 +158,9 @@ MIT — 详见 [LICENSE](LICENSE)\n
 
 本项目是 **DSH (DeepSeek Harness)** 生态的一员，同系列还有：
 
-- 🎀 [`dsh-moe-plugin`](https://github.com/nataliwhite20534-droid/dsh-moe-plugin) — 萌属性 Persona 系统（10 种预设卡片）
-- ⚙️ [`dsh-4-role-workflow`](https://github.com/nataliwhite20534-droid/dsh-4-role-workflow) — 4 角色 Agent 工作流
-- 📓 [`dsh-china-research-notes`](https://github.com/nataliwhite20534-droid/dsh-china-research-notes) — 中国平台反爬实战笔记
+- 🎀 `dsh-moe-plugin` — 萌属性 Persona 系统（10 种预设卡片）
+- ⚙️ `dsh-4-role-workflow` — 4 角色 Agent 工作流
+- 📓 `dsh-china-research-notes` — 中国平台反爬实战笔记
 
 > 欢迎 Star / Fork / Issue！想参与开发？Fork 后提 PR 即可。
 
