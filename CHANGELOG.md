@@ -9,14 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2026-09-03
 
-### ### Added
-
-### - Initial release
-
-### - Batch keyword search on XHS via `cn-scraper-mcp`
-
-### - Cookie auto-harvest via `guided_login()`
-
-### - Deduplication (per-keyword and cross-keyword)
-
-### - Structured JSON output (title/author/likes/noteId/xsec_token)
+### Added
+- Initial release
+- Batch keyword search on XHS via `cn-scraper-mcp`
+- Cookie auto-harvest via `guided_login()`
+- Deduplication (per-keyword and cross-keyword)
+- Structured JSON output (title/author/likes/noteId/xsec_token)
+- README with usage guide
+- Issue & PR templates
+- Contributing guide
+- DSH 生态成员互链区块
